@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1A56DB"/>
+      <stop offset="100%" stop-color="#0EA5A0"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="16" flood-color="#1A56DB" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+  <rect width="512" height="512" rx="128" fill="url(#grad)" filter="url(#shadow)"/>
+  <!-- Map Pin & Checkmark -->
+  <path d="M256 110 C184 110 126 168 126 240 C126 325 240 400 256 400 C272 400 386 325 386 240 C386 168 328 110 256 110 Z" fill="#ffffff" opacity="0.95"/>
+  <circle cx="256" cy="235" r="75" fill="#1A56DB"/>
+  <path d="M225 235 L248 258 L290 216" fill="none" stroke="#ffffff" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
