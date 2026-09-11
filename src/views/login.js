@@ -19,7 +19,7 @@ export function renderLoginView(container, onLoginSuccess) {
           <div id="login-alert" class="alert alert-error hidden"></div>
 
           <div class="form-group">
-            <label for="login-email" class="form-label">Email Perusahaan</label>
+            <label for="login-email" class="form-label">Email</label>
             <div class="input-wrapper">
               <span class="input-icon">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -31,7 +31,7 @@ export function renderLoginView(container, onLoginSuccess) {
                 type="email"
                 id="login-email"
                 class="form-input"
-                placeholder="nama@perusahaan.com"
+                placeholder="nama@email.com"
                 required
                 autocomplete="email"
               />
