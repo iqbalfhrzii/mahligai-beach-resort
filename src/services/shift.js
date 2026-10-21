@@ -1,4 +1,5 @@
 import { supabase } from "../config/supabase.js";
+import { getWitaNow } from "../utils/date.js";
 
 const DEFAULT_SHIFT = {
   id: "SHF001",
@@ -33,24 +34,26 @@ export function isCasualShift(shift) {
   return shift.checkintime === "00:00" && shift.checkouttime === "23:59";
 }
 
-export function isLate(shift, date = new Date()) {
+export function isLate(shift, customTime = null) {
   if (isCasualShift(shift)) return false;
 
+  const wita = customTime || getWitaNow();
   const [inHour, inMinute] = shift.checkintime.split(":").map(Number);
   const tol = Number(shift.latetoleranceminutes || 0);
 
   const limitTotalMinutes = inHour * 60 + inMinute + tol;
-  const currentTotalMinutes = date.getHours() * 60 + date.getMinutes();
+  const currentTotalMinutes = (wita.hours != null ? wita.hours : wita.getHours()) * 60 + (wita.minutes != null ? wita.minutes : wita.getMinutes());
 
   return currentTotalMinutes > limitTotalMinutes;
 }
 
-export function isTooEarlyToCheckout(shift, date = new Date()) {
+export function isTooEarlyToCheckout(shift, customTime = null) {
   if (isCasualShift(shift)) return false;
 
+  const wita = customTime || getWitaNow();
   const [outHour, outMinute] = shift.checkouttime.split(":").map(Number);
   const outTotalMinutes = outHour * 60 + outMinute;
-  const currentTotalMinutes = date.getHours() * 60 + date.getMinutes();
+  const currentTotalMinutes = (wita.hours != null ? wita.hours : wita.getHours()) * 60 + (wita.minutes != null ? wita.minutes : wita.getMinutes());
 
   return currentTotalMinutes < outTotalMinutes;
 }
@@ -58,7 +61,11 @@ export function isTooEarlyToCheckout(shift, date = new Date()) {
 export function getAllowedCheckoutTimeStr(shift) {
   if (isCasualShift(shift)) return "Fleksibel (Kapan saja)";
   const [outHour, outMinute] = shift.checkouttime.split(":").map(Number);
-  const date = new Date();
-  date.setHours(outHour, outMinute + 1, 0, 0);
-  return String(date.getHours()).padStart(2, "0") + ":" + String(date.getMinutes()).padStart(2, "0");
+  let minute = outMinute + 1;
+  let hour = outHour;
+  if (minute >= 60) {
+    minute -= 60;
+    hour = (hour + 1) % 24;
+  }
+  return String(hour).padStart(2, "0") + ":" + String(minute).padStart(2, "0");
 }

@@ -1,5 +1,6 @@
 import { supabase, BUCKET_NAME } from "../config/supabase.js";
 import { uploadAttendanceSelfie, deleteStorageFiles } from "./storage.js";
+import { getWitaTodayDateStr } from "../utils/date.js";
 
 const TABLE_NAME = "attendances";
 
@@ -23,10 +24,9 @@ export async function getTodayAttendance(userId) {
       return data;
     }
 
-    // If checked out, verify if it was today
-    const now = new Date();
-    const todayStr = now.toISOString().split("T")[0];
-    const recordDateStr = new Date(data.date).toISOString().split("T")[0];
+    // If checked out, verify if it was today in WITA
+    const todayStr = getWitaTodayDateStr();
+    const recordDateStr = (data.date || "").split("T")[0];
 
     if (recordDateStr === todayStr) {
       return data;
@@ -59,6 +59,7 @@ export async function checkIn({
     throw new Error("Anda memiliki sesi absensi yang belum selesai (belum Check Out).");
   }
 
+  const todayWitaStr = getWitaTodayDateStr();
   const now = new Date();
   let publicPhotoUrl = null;
 
@@ -71,7 +72,7 @@ export async function checkIn({
     employeename: employeeName,
     shiftid: shiftId,
     shiftname: shiftName,
-    date: now.toISOString().split("T")[0],
+    date: todayWitaStr,
     checkintime: now.toISOString(),
     checkinphotopath: publicPhotoUrl,
     latitude: latitude || null,
@@ -180,8 +181,9 @@ export async function getAllAttendances(monthFilter = null) {
   if (monthFilter) {
     // monthFilter is "YYYY-MM"
     const [year, month] = monthFilter.split("-").map(Number);
-    const start = new Date(year, month - 1, 1).toISOString().split("T")[0];
-    const end = new Date(year, month, 0).toISOString().split("T")[0];
+    const lastDay = new Date(year, month, 0).getDate();
+    const start = `${year}-${String(month).padStart(2, "0")}-01`;
+    const end = `${year}-${String(month).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
     query = query.gte("date", start).lte("date", end);
   }
 
@@ -194,8 +196,9 @@ export async function getAllAttendances(monthFilter = null) {
  * Delete records by month
  */
 export async function deleteAttendancesByMonth(year, month) {
-  const start = new Date(year, month - 1, 1).toISOString().split("T")[0];
-  const end = new Date(year, month, 0).toISOString().split("T")[0];
+  const lastDay = new Date(year, month, 0).getDate();
+  const start = `${year}-${String(month).padStart(2, "0")}-01`;
+  const end = `${year}-${String(month).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
 
   const { data: records, error: fetchErr } = await supabase
     .from(TABLE_NAME)

@@ -7,6 +7,7 @@ import { openCameraModal } from "../components/camera-modal.js";
 import { openPhotoModal } from "../components/photo-modal.js";
 import { initMapCard, destroyMap } from "../components/map-card.js";
 import { showToast } from "../components/toast.js";
+import { getWitaNow, formatTimeWita, calculateWorkDuration } from "../utils/date.js";
 
 let clockInterval = null;
 
@@ -24,7 +25,10 @@ export async function renderHomeView(container, user) {
             <span class="live-dot"></span> LIVE
           </div>
         </div>
-        <div class="clock-time-display" id="live-clock">00:00:00</div>
+        <div class="clock-time-container">
+          <div class="clock-time-display" id="live-clock">00:00:00</div>
+          <span class="clock-tz-badge">WITA</span>
+        </div>
         <div class="clock-greeting">
           <p class="greeting-sub">Selamat bertugas,</p>
           <h2 class="greeting-name">${escapeHtml(user.fullname)}</h2>
@@ -232,23 +236,11 @@ export async function renderHomeView(container, user) {
   let todayAttendance = null;
   let isMapOpen = false;
 
-  // 1. Setup Live Clock
+  // 1. Setup Live Clock (Strictly WITA - UTC+8)
   function updateClock() {
-    const now = new Date();
-    const days = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
-    const months = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
-
-    const dayName = days[now.getDay()];
-    const dateNum = now.getDate();
-    const monthName = months[now.getMonth()];
-    const year = now.getFullYear();
-
-    liveDate.textContent = `${dayName}, ${dateNum} ${monthName} ${year}`;
-
-    const hh = String(now.getHours()).padStart(2, "0");
-    const mm = String(now.getMinutes()).padStart(2, "0");
-    const ss = String(now.getSeconds()).padStart(2, "0");
-    liveClock.textContent = `${hh}:${mm}:${ss}`;
+    const wita = getWitaNow();
+    liveDate.textContent = wita.fullDateStr;
+    liveClock.textContent = wita.timeWithSeconds;
   }
 
   updateClock();
@@ -381,8 +373,7 @@ export async function renderHomeView(container, user) {
       // Case 2: Checked In, but has not Checked Out
       statusLabel.textContent = "Sedang Bertugas (Sudah Check In)";
 
-      const inDate = new Date(todayAttendance.checkintime);
-      checkinTimeText.textContent = formatTimeStr(inDate);
+      checkinTimeText.textContent = formatTimeWita(todayAttendance.checkintime);
 
       // Status badge
       const isLateStatus = todayAttendance.attendancestatus === "late_";
@@ -413,15 +404,12 @@ export async function renderHomeView(container, user) {
       // Case 3: Completed attendance
       statusLabel.textContent = "Absensi Hari Ini Selesai";
 
-      const inDate = new Date(todayAttendance.checkintime);
-      const outDate = new Date(todayAttendance.checkouttime);
-
-      checkinTimeText.textContent = formatTimeStr(inDate);
+      checkinTimeText.textContent = formatTimeWita(todayAttendance.checkintime);
       const isLateStatus = todayAttendance.attendancestatus === "late_";
       checkinBadge.textContent = isLateStatus ? "Terlambat" : "Tepat Waktu";
       checkinBadge.className = isLateStatus ? "badge badge-sm badge-warning" : "badge badge-sm badge-success";
 
-      checkoutTimeText.textContent = formatTimeStr(outDate);
+      checkoutTimeText.textContent = formatTimeWita(todayAttendance.checkouttime);
       checkoutBadge.textContent = "Selesai";
       checkoutBadge.className = "badge badge-sm badge-success";
 
@@ -435,12 +423,7 @@ export async function renderHomeView(container, user) {
       }
 
       // Calculate duration
-      let diffMs = outDate - inDate;
-      if (diffMs < 0) diffMs += 24 * 60 * 60 * 1000;
-      const totalMinutes = Math.floor(diffMs / 60000);
-      const hrs = Math.floor(totalMinutes / 60);
-      const mins = totalMinutes % 60;
-      workDurationText.textContent = hrs > 0 ? `${hrs} jam ${mins} menit` : `${mins} menit`;
+      workDurationText.textContent = calculateWorkDuration(todayAttendance.checkintime, todayAttendance.checkouttime);
 
       completeBanner.classList.remove("hidden");
       shiftSelect.disabled = true;
@@ -470,8 +453,7 @@ export async function renderHomeView(container, user) {
         showToast("Menyimpan absensi masuk...", "info");
 
         try {
-          const now = new Date();
-          const late = selectedShift ? isLate(selectedShift, now) : false;
+          const late = selectedShift ? isLate(selectedShift) : false;
           const status = late ? "late_" : "present";
 
           await checkIn({
@@ -510,8 +492,7 @@ export async function renderHomeView(container, user) {
     if (!todayAttendance) return;
 
     // Check if early leave
-    const now = new Date();
-    const isEarly = selectedShift ? isTooEarlyToCheckout(selectedShift, now) : false;
+    const isEarly = selectedShift ? isTooEarlyToCheckout(selectedShift) : false;
 
     if (isEarly) {
       const allowedTime = getAllowedCheckoutTimeStr(selectedShift);
@@ -560,9 +541,7 @@ export async function renderHomeView(container, user) {
 }
 
 function formatTimeStr(date) {
-  const hh = String(date.getHours()).padStart(2, "0");
-  const mm = String(date.getMinutes()).padStart(2, "0");
-  return `${hh}:${mm}`;
+  return formatTimeWita(date);
 }
 
 function escapeHtml(str) {

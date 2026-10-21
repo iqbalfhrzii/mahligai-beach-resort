@@ -1,5 +1,6 @@
 import { logout, changePassword } from "../services/auth.js";
 import { showToast } from "../components/toast.js";
+import { formatIndoDateWita } from "../utils/date.js";
 
 export function renderProfileView(container, user, onLogoutSuccess) {
   const initials = getInitials(user.fullname || "User");
@@ -206,10 +207,7 @@ function getInitials(name) {
 }
 
 function formatJoinDate(dateStr) {
-  if (!dateStr) return "-";
-  const d = new Date(dateStr);
-  const months = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
-  return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+  return formatIndoDateWita(dateStr, true);
 }
 
 function escapeHtml(str) {

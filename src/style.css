@@ -513,6 +513,14 @@ h1, h2, h3, h4 {
   animation: pulse-dot 1.5s infinite;
 }
 
+.clock-time-container {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 8px;
+  margin: 4px 0 14px 0;
+}
+
 .clock-time-display {
   font-size: 44px;
   font-weight: 800;
@@ -521,7 +529,20 @@ h1, h2, h3, h4 {
   background: linear-gradient(180deg, #ffffff 30%, #cbd5e1 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  margin: 4px 0 14px 0;
+  line-height: 1;
+}
+
+.clock-tz-badge {
+  display: inline-block;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.15);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  align-self: center;
 }
 
 .clock-greeting {

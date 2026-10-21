@@ -2,6 +2,11 @@ import * as XLSX from "xlsx";
 import { getAllAttendances, deleteAttendancesByMonth } from "../services/attendance.js";
 import { openPhotoModal } from "../components/photo-modal.js";
 import { showToast } from "../components/toast.js";
+import {
+  formatTimeWita,
+  formatIndoDateWita,
+  getWitaCurrentMonthStr,
+} from "../utils/date.js";
 
 export async function renderAdminView(container, user) {
   if (user.role !== "admin") {
@@ -21,7 +26,7 @@ export async function renderAdminView(container, user) {
       <div class="view-header-row">
         <div>
           <h2 class="view-title">Laporan & Rekap Absensi</h2>
-          <p class="view-subtitle">Kelola dan ekspor data kehadiran seluruh karyawan</p>
+          <p class="view-subtitle">Kelola dan ekspor data kehadiran seluruh karyawan (Zona WITA)</p>
         </div>
       </div>
 
@@ -80,8 +85,8 @@ export async function renderAdminView(container, user) {
                 <th>Tanggal</th>
                 <th>Karyawan</th>
                 <th>Shift</th>
-                <th>Masuk</th>
-                <th>Pulang</th>
+                <th>Masuk (WITA)</th>
+                <th>Pulang (WITA)</th>
                 <th>Status</th>
                 <th>Foto</th>
               </tr>
@@ -112,10 +117,8 @@ export async function renderAdminView(container, user) {
   const metricPresent = container.querySelector("#metric-present");
   const metricLate = container.querySelector("#metric-late");
 
-  // Default month filter
-  const now = new Date();
-  const currentYm = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-  monthFilter.value = currentYm;
+  // Default month filter to current year-month in WITA
+  monthFilter.value = getWitaCurrentMonthStr();
 
   let records = [];
 
@@ -159,14 +162,14 @@ export async function renderAdminView(container, user) {
     tableContainer.classList.remove("hidden");
 
     tableBody.innerHTML = filtered.map((r) => {
-      const inTime = r.checkintime ? formatTimeOnly(r.checkintime) : "--:--";
-      const outTime = r.checkouttime ? formatTimeOnly(r.checkouttime) : "--:--";
+      const inTime = r.checkintime ? formatTimeWita(r.checkintime) : "--:--";
+      const outTime = r.checkouttime ? formatTimeWita(r.checkouttime) : "--:--";
       const statusBadge = getStatusBadge(r.attendancestatus);
 
       return `
         <tr>
           <td>
-            <div class="fw-semibold">${formatIndoDate(r.date)}</div>
+            <div class="fw-semibold">${formatIndoDateWita(r.date, true)}</div>
           </td>
           <td>
             <div class="fw-bold">${escapeHtml(r.employeename || "-")}</div>
@@ -220,11 +223,11 @@ export async function renderAdminView(container, user) {
     try {
       const exportData = records.map((r, index) => ({
         "No": index + 1,
-        "Tanggal": r.date,
+        "Tanggal": formatIndoDateWita(r.date),
         "Nama Karyawan": r.employeename,
-        "Shift": r.shiftname,
-        "Jam Masuk": r.checkintime ? new Date(r.checkintime).toLocaleTimeString("id-ID") : "-",
-        "Jam Pulang": r.checkouttime ? new Date(r.checkouttime).toLocaleTimeString("id-ID") : "-",
+        "Shift": r.shiftname || "-",
+        "Jam Masuk (WITA)": r.checkintime ? formatTimeWita(r.checkintime) : "-",
+        "Jam Pulang (WITA)": r.checkouttime ? formatTimeWita(r.checkouttime) : "-",
         "Status Kehadiran": r.attendancestatus === "present" ? "Hadir" : (r.attendancestatus === "late_" ? "Terlambat" : r.attendancestatus),
         "Status Lokasi": r.locationstatus === "inside" ? "Di Dalam Area" : "Di Luar Area",
         "Jarak (m)": r.distancefromoffice || "-",
@@ -290,19 +293,6 @@ function getStatusBadge(status) {
     default:
       return { label: status || "-", badgeClass: "badge-outline" };
   }
-}
-
-function formatTimeOnly(iso) {
-  const d = new Date(iso);
-  const hh = String(d.getHours()).padStart(2, "0");
-  const mm = String(d.getMinutes()).padStart(2, "0");
-  return `${hh}:${mm}`;
-}
-
-function formatIndoDate(dateStr) {
-  const d = new Date(dateStr);
-  const months = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
-  return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
 }
 
 function escapeHtml(str) {
